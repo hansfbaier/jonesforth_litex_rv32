@@ -1,6 +1,6 @@
 # Jonesforth RISC-V
 
-RISC-V 64 implementation of Jones forth.
+RISC-V 32 implementation of Jones forth.
 
 The code is based on Richard WM Jones's excellent literate x86 assembly
 implementation of Forth, more on which here:
@@ -9,8 +9,9 @@ http://rwmj.wordpress.com/2010/08/07/jonesforth-git-repository/
 The x86 version source code is copied from a mirror repo: https://github.com/nornagon/jonesforth
 
 The RISC-V version is rewritten by [JJy](https://justjjy.com), mostly modification is in the `jonesforth.S` file.
+The RISC-V 32 version has been ported by [Hans Baier](https://www.hans-baier.de)
 
-> The RISC-V version jonesforth is using RV64 instructions, so the WORD size and alignment is 8 bytes.
+> This RISC-V version jonesforth is using RV32 instructions, so the WORD size and alignment is 4 bytes.
 
 ## Run
 
@@ -34,3 +35,4 @@ Compile & Run:
 
 * [RISCV Specification](https://riscv.org/technical/specifications/)
 * [RISC-V Assembly Programmer's Manual](https://github.com/riscv/riscv-asm-manual/blob/master/riscv-asm.md)
+* [RISC-V Quick Reference](https://www.cl.cam.ac.uk/teaching/1617/ECAD+Arch/files/docs/RISCVGreenCardv8-20151013.pdf)

@@ -189,15 +189,15 @@
 	+------------------------+--------+---------- - - - - +----------- - - - -
 	| LINK POINTER           | LENGTH/| NAME	      | DEFINITION
 	|			 | FLAGS  |     	      |
-	+--- (8 bytes) ----------+- byte -+- n bytes  - - - - +----------- - - - -
+	+--- (4 bytes) ----------+- byte -+- n bytes  - - - - +----------- - - - -
 
 	I'll come to the definition of the word later.  For now just look at the header.  The first
-	8 bytes are the link pointer.  This points back to the previous word in the dictionary, or, for
+	4 bytes are the link pointer.  This points back to the previous word in the dictionary, or, for
 	the first word in the dictionary it is just a NULL pointer.  Then comes a length/flags byte.
 	The length of the word can be up to 31 characters (5 bits used) and the top three bits are used
 	for various flags which I'll come to later.  This is followed by the name itself, and in this
-	implementation the name is rounded up to a multiple of 8 bytes by padding it with zero bytes.
-	That's just to ensure that the definition starts on a 64 bit boundary.
+	implementation the name is rounded up to a multiple of 4 bytes by padding it with zero bytes.
+	That's just to ensure that the definition starts on a 32 bit boundary.
 
 	A FORTH variable called LATEST contains a pointer to the most recently defined word, in
 	other words, the head of this linked list.
@@ -293,8 +293,8 @@
 		2C 00 00 00
 
 	The all-important instructions are called `ld` and `addi`. Firstly `ld` reads the memory 
-	at s1 into the register (a0).  Secondly `addi` increments s1 by 8 bytes
-	(we are on a 64 bits machine, the pointer size is 64 bits).  
+	at s1 into the register (a0).  Secondly `addi` increments s1 by 4 bytes
+	(we are on a 32 bits machine, the pointer size is 32 bits).  
 	So after the two instructions, the situation now looks like this:
 
 		08 00 00 00	<- We're still executing this one
@@ -310,7 +310,7 @@
 	  s1 -> 2C 00 00 00
 
 	To make this work, each subroutine is followed by the four instructions: 
-	'ld a0, 0(s1); addi s1, s1, 8; ld t0, 0(a0); jalr t0'
+	'ld a0, 0(s1); addi s1, s1, 4; ld t0, 0(a0); jalr t0'
 	which make the jump to the next subroutine.
 
 	And that brings us to our first piece of actual code!  Well, it's a macro.
@@ -320,9 +320,9 @@
 /* use s1 pointing to the interpreter pc
  */
 	.macro NEXT
-	ld a0, 0(s1)
-	addi s1, s1, 8
-	ld t0, 0(a0)
+	lw a0, 0(s1)
+	addi s1, s1, 4
+	lw t0, 0(a0)
 	jalr t0
 	.endm
 
@@ -411,7 +411,7 @@
 	The assembly code for DUP eventually does a NEXT.  That:
 
 	(1) reads the address of + into a0		a0 points to the codeword of +
-	(2) increments s1 by 8
+	(2) increments s1 by 4
 	(3) jumps to the indirect t0			jumps to the address in the codeword of +,
 							ie. the assembly code to implement +
 
@@ -495,17 +495,17 @@
 
 	.macro PUSH_ADJ depth reg regs:vararg
 	.ifb \regs
-	addi sp,sp,\depth-8
+	addi sp,sp,\depth-4
 	.else
-	PUSH_ADJ \depth-8, \regs
+	PUSH_ADJ \depth-4, \regs
 	.endif
 	.endm
 
 	.macro PUSH_REG dst off reg="" regs:vararg
 	.ifb \reg
-	sd \dst,(\off)(sp)
+	sw \dst,(\off)(sp)
 	.else
-	PUSH_REG \dst, \off+8, \regs
+	PUSH_REG \dst, \off+4, \regs
 	.endif
 	.endm
 
@@ -522,22 +522,22 @@
 	.endm
 
 	.macro POP_R depth reg regs:vararg
-	ld \reg,\depth(sp)
+	lw \reg,\depth(sp)
 	.ifb \regs
-	addi sp,sp,\depth+8
+	addi sp,sp,\depth+4
 	.else
-	POP_R \depth+8, \regs
+	POP_R \depth+4, \regs
 	.endif
 	.endm
 
 	.macro PUSHRSP reg
-	addi fp, fp, -8			// push  reg on to stack
-	sd \reg, 0(fp)
+	addi fp, fp, -4			// push  reg on to stack
+	sw \reg, 0(fp)
 	.endm
 
 	.macro POPRSP reg
-	ld \reg, 0(fp)            	// pop top of return stack to reg
-	addi fp, fp, 8
+	lw \reg, 0(fp)            	// pop top of return stack to reg
+	addi fp, fp, 4
 	.endm
 
 	/* Macros to help us handling function calls. 
@@ -558,7 +558,7 @@
 
 	The "interpreter" (it's not really "interpreting") just needs to push the old s1 on the
 	stack and set s1 to the first word in the definition.  Remember that we jumped to the
-	function using `ld t0, 0(a0); jalr t0`?  Well a consequence of that is that conveniently a0 contains
+	function using `lw t0, 0(a0); jalr t0`?  Well a consequence of that is that conveniently a0 contains
 	the address of this codeword, so just by adding 8 to it we get the address of the first
 	data word.  Finally after setting up s1, it just does NEXT which causes that first word
 	to run.
@@ -567,10 +567,10 @@
 /* DOCOL - the interpreter! */
 
 	.text
-	.balign 8
+	.balign 4
 DOCOL:
 	PUSHRSP s1		// push s1 on to the return stack
-	addi a0, a0, 8	 	// a0 points to codeword, so make
+	addi a0, a0, 4	 	// a0 points to codeword, so make
 	mv s1, a0		// s1 point to first data word
 	NEXT
 
@@ -591,7 +591,7 @@ DOCOL:
 
 	First, the call to DOUBLE calls DOCOL (the codeword of DOUBLE).  DOCOL does this:  It
 	pushes the old s1 on the return stack.  a0 points to the codeword of DOUBLE, so we
-	just add 8 on to it to get our new s1:
+	just add 4 on to it to get our new s1:
 
 		QUADRUPLE:
 		+------------------+
@@ -599,7 +599,7 @@ DOCOL:
 		+------------------+		   DOUBLE:
 		| addr of DOUBLE  ---------------> +------------------+
 top of return	+------------------+         a0 -> | addr of DOCOL    |
-stack points ->	| addr of DOUBLE   |	   + 8 =   +------------------+
+stack points ->	| addr of DOUBLE   |	   + 4 =   +------------------+
 		+------------------+	     s1 -> | addr of DUP      |
 		| addr of EXIT	   |		   +------------------+
 		+------------------+               | etc.             |
@@ -636,7 +636,7 @@ stack points ->	| addr of DOUBLE   |	   + 8 =   +------------------+
 	.globl _start
 _start:
 	la t0, var_S0
-	sd sp, 0(t0)		// Save the initial data stack pointer in FORTH variable S0.
+	sw sp, 0(t0)		// Save the initial data stack pointer in FORTH variable S0.
 	la fp, return_stack_top        // Initialise the return stack.
 	call set_up_data_segment
 
@@ -644,7 +644,7 @@ _start:
 	NEXT			        // Run interpreter!
 
 	.section .rodata
-	.balign 8
+	.balign 4
 cold_start:			// High-level code without a codeword.
 	.dword QUIT
 
@@ -700,13 +700,13 @@ DOUBLE: .dword DOCOL		// codeword
 	// Store the chain of links.
 	.macro defword name, namelen, flags=0, label, link
 	.section .rodata
-	.balign 8
+	.balign 4
 	.globl name_\label
 name_\label :
 	.dword name_\link		// link
 	.byte \flags+\namelen	// flags + length byte
 	.ascii "\name"		// the name
-	.balign 8		// padding to next 8 byte boundary
+	.balign 4		// padding to next 8 byte boundary
 	.globl \label
 \label :
 	.dword DOCOL		// codeword - the interpreter
@@ -737,18 +737,18 @@ name_\label :
 
 	.macro defcode name, namelen, flags=0, label, link
 	.section .rodata
-	.balign 8
+	.balign 4
 	.globl name_\label
 name_\label :
 	.dword name_\link		// link
 	.byte \flags+\namelen	// flags + length byte
 	.ascii "\name"		// the name
-	.balign 8		// padding to next 8 byte boundary
+	.balign 4		// padding to next 8 byte boundary
 	.globl \label
 \label :
 	.dword code_\label	// codeword
 	.text
-	.balign 8
+	.balign 4
 	.globl code_\label
 code_\label :			// assembler code follows
 	.endm
@@ -771,12 +771,12 @@ code_\label :			// assembler code follows
 	NEXT
 
 	defcode "DUP",3,,DUP, SWAP
-	ld a0, 0(sp)    		// duplicate top of stack
+	lw a0, 0(sp)    		// duplicate top of stack
 	PUSH a0
 	NEXT
 
 	defcode "OVER",4,,OVER, DUP
-	ld a0, 8(sp)	                // get the second element of stack
+	lw a0, 4(sp)	                // get the second element of stack
 	PUSH a0 		        // and push it on top
 	NEXT
 
@@ -795,8 +795,8 @@ code_\label :			// assembler code follows
 	NEXT
 
 	defcode "2DUP",4,,TWODUP, TWODROP // duplicate top two elements of stack
-	ld a0, 0(sp)
-	ld a1, 8(sp)
+	lw a0, 0(sp)
+	lw a1, 4(sp)
 	PUSH a1 a0
 	NEXT
 
@@ -806,7 +806,7 @@ code_\label :			// assembler code follows
 	NEXT
 
 	defcode "?DUP",4,,QDUP, TWOSWAP	// duplicate top of stack if non-zero
-	ld a0, 0(sp)
+	lw a0, 0(sp)
 	beqz a0, 1f
 	PUSH a0
 1:	NEXT
@@ -1074,9 +1074,9 @@ code_\label :			// assembler code follows
 	defcode "LIT",3,,LIT, EXIT
 	// s1 points to the next command, but in this case it points to the next
 	// literal 32 bit integer.  Get that literal into a0 and increment s1.
-	ld a0, 0(s1)
+	lw a0, 0(s1)
 	PUSH a0			// push the literal number on to stack
-	addi s1, s1, 8		// skip next command
+	addi s1, s1, 4		// skip next command
 	NEXT
 
 /*
@@ -1089,27 +1089,27 @@ code_\label :			// assembler code follows
 
 	defcode "!",1,,STORE, LIT
 	POP a0 a1		// a0 = address to store at  a1 = data to store there
-	sd a1, 0(a0)	// store it
+	sw a1, 0(a0)	// store it
 	NEXT
 
 	defcode "@",1,,FETCH, STORE
 	POP a0			// address to fetch
-	ld a1, 0(a0)	// fetch it
+	lw a1, 0(a0)	// fetch it
 	PUSH a1			// push value onto stack
 	NEXT
 
 	defcode "+!",2,,ADDSTORE, FETCH
 	POP a0 a1		// a0 = address  a1 = the amount to add
-	ld a2, 0(a0)
+	lw a2, 0(a0)
 	add a3, a1, a2	// add it
-	sd a3, 0(a0)
+	sw a3, 0(a0)
 	NEXT
 
 	defcode "-!",2,,SUBSTORE, ADDSTORE
 	POP a0 a1	// a0 = address  a1 = the amount to subtract
-	ld a2, 0(a0)
+	lw a2, 0(a0)
 	sub a3, a2, a1
-	sd a3, 0(a0)
+	sw a3, 0(a0)
 	NEXT
 
 /*
@@ -1135,7 +1135,8 @@ code_\label :			// assembler code follows
 	POP a0 a1		// a0 = destination address  a1 = source address
 	lb a2, 0(a1)		// get source character
 	sb a2, 0(a0)		// copy to destination
-	addi a1, a1, 8
+	addi a1, a1, 4
+	// TODO: addi missing for a0?
 	PUSH a0 a1		// increment destination and source address
 	NEXT
 
@@ -1151,16 +1152,16 @@ code_\label :			// assembler code follows
 	a2: source address
 */
 _COPY_BYTES:
-	slti a4, a0, 8		// jump to copy byte if length is < 8
+	slti a4, a0, 4		// jump to copy byte if length is < 4
 	bnez a4, 2f
 1:	// copy word by word
-	ld a3, 0(a2)
-	sd a3, 0(a1)		// copy source to destination
-	addi a0, a0, -8		// update length, destination, source
+	lw a3, 0(a2)
+	sw a3, 0(a1)		// copy source to destination
+	addi a0, a0, -4		// update length, destination, source
 	beqz a0, 3f
-	addi a1, a1, 8
-	addi a2, a2, 8
-	slti a4, a0, 8		// check if length is < 8
+	addi a1, a1, 4
+	addi a2, a2, 4
+	slti a4, a0, 4		// check if length is < 4
 	beqz a4, 1b
 2:	// copy byte
 	lb a3, 0(a2)
@@ -1193,7 +1194,7 @@ _COPY_BYTES:
 	PUSH t0
 	NEXT
 	.data
-	.balign 8
+	.balign 4
 var_\name :
 	.dword \initial
 	.endm
@@ -1299,7 +1300,7 @@ var_\name :
 	NEXT
 
 	defcode "RDROP",5,,RDROP, RSPSTORE
-	addi fp, fp, 8		// pop return stack and throw away
+	addi fp, fp, 4		// pop return stack and throw away
 	NEXT
 
 /*
@@ -1361,25 +1362,25 @@ var_\name :
 
 	defcode "KEY",3,,KEY, DSPSTORE
 	RCALL _KEY
-	PUSH a0				// push return value on stack
+	PUSH a0			// push return value on stack
 	NEXT
 _KEY:
 	la t1, currkey
-	ld a1, 0(t1)
+	lw a1, 0(t1)
 	la t0, bufftop
-	ld t0, 0(t0)
+	lw t0, 0(t0)
 	sltu a2, a1, t0
-	beqz a2, 1f			// exhausted the input buffer?
+	beqz a2, 1f		// exhausted the input buffer?
 	lb a0, 0(a1)		// get next key from input buffer
 	addi a3, a1, 1
-	sd a3, 0(t1)		// increment currkey
+	sw a3, 0(t1)		// increment currkey
 	ret
 
 1:	// Out of input; use read(2) to fetch more input from stdin.
-	mv a0, zero			// 1st param: stdin
+	mv a0, zero		// 1st param: stdin
 	la a1, buffer		// 2nd param: buffer
 	la t0, currkey
-	sd a1, 0(t0)
+	sw a1, 0(t0)
 	li a2, BUFFER_SIZE	// 3rd param: max length
 	li a7, __NR_read	// syscall: read
 	ecall
@@ -1387,7 +1388,7 @@ _KEY:
 	beqz t0, 2f
 	add a0, a0, a1		// buffer+a0 = bufftop
 	la t0, bufftop
-	sd a0, 0(t0)
+	sw a0, 0(t0)
 	j _KEY
 
 2:	// Error or end of input: exit the program.
@@ -1395,7 +1396,7 @@ _KEY:
 	ecall
 
 	.data
-	.balign 8
+	.balign 4
 currkey:
 	.dword buffer		// Current place in input buffer (next character to read).
 bufftop:
@@ -1504,7 +1505,7 @@ _WORD:
 	j 1b
 
 	.data			// NB: easier to fit in the .data section
-	.balign 8
+	.balign 4
 	// A static buffer where WORD returns.  Subsequent calls
 	// overwrite this buffer.  Maximum word length is 32 chars.
 word_buffer:
@@ -1537,7 +1538,7 @@ _NUMBER:
 	beqz a1, 5f		// trying to parse a zero-length string is an error, but will return 0.
 
 	la a3, var_BASE
-	ld a3, 0(a3)		// get BASE
+	lw a3, 0(a3)		// get BASE
 
 	// Check if first character is '-'.
 	lb a4, 0(a2)		// a4 = first character in string
@@ -1611,13 +1612,13 @@ _NUMBER:
 _FIND:
 	// Now we start searching backwards through the dictionary for this word.
 	la a0, var_LATEST	// LATEST points to name header of the latest word in the dictionary
-	ld a0, 0(a0)
+	lw a0, 0(a0)
 1:	beqz a0, 4f		// NULL pointer?  (end of the linked list)
 
 	// Compare the length expected and the length of the word.
 	// Note that if the F_HIDDEN flag is set on the word, then by a bit of trickery
 	// this won't pick the word (the length will appear to be wrong).
-	lb a3, 8(a0)		// a0 = flags+length field
+	lb a3, 4(a0)		// a0 = flags+length field
 	andi a3, a3, (F_HIDDEN|F_LENMASK) // a0 = name length
 	sub t0, a3, a1		// Length is the same?
 	bnez t0, 3f
@@ -1625,7 +1626,7 @@ _FIND:
 	// Compare the strings in detail.
 	mv t0, a0
 	mv t2, a2
-2:	lb t1, 9(t0) 		// Dictionary string we are checking against.
+2:	lb t1, 5(t0) 		// Dictionary string we are checking against.
 	lb t3, 0(t2)
 	sub t1, t1, t3		// Compare the strings.
 	bnez t1, 3f		// Not the same.
@@ -1637,7 +1638,7 @@ _FIND:
 	// The strings are the same - return the header pointer in a0
 	ret
 
-3:	ld a0, 0(a0)		// Move back through the link field to the previous word
+3:	lw a0, 0(a0)		// Move back through the link field to the previous word
 	j 1b			// .. and loop.
 
 4:	// Not found.
@@ -1681,12 +1682,12 @@ _FIND:
 	PUSH a0
 	NEXT
 _TCFA:
-	lb a1, 8(a0)		// Load flags+len into a0.
+	lb a1, 4(a0)		// Load flags+len into a0.
 	andi a1, a1, F_LENMASK	// Just the length, not the flags.
-	addi a0, a0, 9		// Skip link pointer and flags+len byte.
+	addi a0, a0, 5		// Skip link pointer and flags+len byte.
 	add a0, a0, a1		// Skip the name.
-	addi a0, a0, 7		// The codeword is 8-byte aligned.
-	andi a0, a0, ~7
+	addi a0, a0, 3		// The codeword is 4-byte aligned.
+	andi a0, a0, ~3
 	ret
 
 /*
@@ -1707,12 +1708,12 @@ _TCFA:
 	(Note to those following the source of FIG-FORTH / ciforth: My >DFA definition is
 	different from theirs, because they have an extra indirection).
 
-	You can see that >DFA is easily defined in FORTH just by adding 8 to the result of >CFA.
+	You can see that >DFA is easily defined in FORTH just by adding 4 to the result of >CFA.
 */
 
 	defword ">DFA",4,,TDFA, TCFA
 	.dword TCFA		// >CFA		(get code field address)
-	.dword INCR8		// 8+		(add 8 to it to get to next word)
+	.dword INCR4		// 4+		(add 4 to it to get to next word)
 	.dword EXIT		// EXIT		(return from FORTH word)
 
 /*
@@ -1874,11 +1875,11 @@ _TCFA:
 	// Link pointer.
 
 	la a1, var_HERE		// a1 is the address of the header
-	ld a1, 0(a1)
+	lw a1, 0(a1)
 	la a3, var_LATEST	
-	ld t0, 0(a3)		// Get link pointer
-	sd t0, 0(a1)		// and store it in the header.
-	addi a1, a1, 8
+	lw t0, 0(a3)		// Get link pointer
+	sw t0, 0(a1)		// and store it in the header.
+	addi a1, a1, 4
 
 	// Length byte and the word itself.
 
@@ -1888,15 +1889,15 @@ _TCFA:
 	RCALL _COPY_BYTES	// Copy the word
 	POP a1 a0
 	add a1, a1, a0		// a1 is the address of the end of word
-	addi a1, a1, 7		// Align to next 8 byte boundary.
-	andi a1, a1, ~7
+	addi a1, a1, 3		// Align to next 4 byte boundary.
+	andi a1, a1, ~3
 
 	// Update LATEST and HERE.
 	la t0, var_HERE
 	la t1, var_LATEST
-	ld t2, 0(t0)
-	sd t2, 0(t1)
-	sd a1, 0(t0)
+	lw t2, 0(t0)
+	sw t2, 0(t1)
+	sw a1, 0(t0)
 	NEXT
 
 /*
@@ -1904,7 +1905,7 @@ _TCFA:
 	to use.
 
 	The first is , (COMMA) which is a standard FORTH word which appends a 32 bit integer to the user
-	memory pointed to by HERE, and adds 8 to HERE.  So the action of , (COMMA) is:
+	memory pointed to by HERE, and adds 4 to HERE.  So the action of , (COMMA) is:
 
 							previous value of HERE
 								 |
@@ -1928,10 +1929,10 @@ _TCFA:
 	NEXT
 _COMMA:
 	la t0, var_HERE		// HERE
-	ld t1, 0(t0)
-	sd a0, 0(t1)		// Store it.
-	addi t1, t1, 8		// Increment
-	sd t1, 0(t0)		// Update HERE
+	lw t1, 0(t0)
+	sw a0, 0(t1)		// Store it.
+	addi t1, t1, 4		// Increment
+	sw t1, 0(t0)		// Update HERE
 	ret
 
 /*
@@ -1955,13 +1956,13 @@ _COMMA:
 
 	defcode "[",1,F_IMMED,LBRAC, COMMA
 	la t0, var_STATE
-	sd zero, 0(t0)	// Set STATE to 0.
+	sw zero, 0(t0)	// Set STATE to 0.
 	NEXT
 
 	defcode "]",1,,RBRAC, LBRAC
 	la t0, var_STATE
 	la t1, 1
-	sd t1, 0(t0)	// Set STATE to 1.
+	sw t1, 0(t0)	// Set STATE to 1.
 	NEXT
 
 /*
@@ -2017,8 +2018,8 @@ _COMMA:
 
 	defcode "IMMEDIATE",9,F_IMMED,IMMEDIATE,SEMICOLON
 	la a0, var_LATEST	// LATEST word.
-	ld a0, 0(a0)
-	addi a0, a0, 8		// Point to name/flags byte.
+	lw a0, 0(a0)
+	addi a0, a0, 4		// Point to name/flags byte.
 	lb t0, 0(a0)
 	xori t0, t0, F_IMMED	// Toggle the IMMED bit.
 	sb t0, 0(a0)
@@ -2048,7 +2049,7 @@ _COMMA:
 
 	defcode "HIDDEN",6,,HIDDEN,IMMEDIATE
 	POP a0			// Dictionary entry.
-	addi a0, a0, 8		// Point to name/flags byte.
+	addi a0, a0, 4		// Point to name/flags byte.
 	lb t0, 0(a0)
 	xori t0, t0, F_HIDDEN	// Toggle the HIDDEN bit.
 	sb t0, 0(a0)
@@ -2089,9 +2090,9 @@ _COMMA:
 	immediate mode too.
 */
 	defcode "'",1,,TICK,HIDE
-	ld t0, 0(s1)		// Get the address of the next word and skip it.
+	lw t0, 0(s1)		// Get the address of the next word and skip it.
 	PUSH t0			// Push it on the stack.
-	addi s1, s1, 8
+	addi s1, s1, 4
 	NEXT
 
 /*
@@ -2136,14 +2137,14 @@ _COMMA:
 */
 
 	defcode "BRANCH",6,,BRANCH,TICK
-	ld t0, 0(s1)
+	lw t0, 0(s1)
 	add s1, s1, t0		// add the offset to the instruction pointer
 	NEXT
 
 	defcode "0BRANCH",7,,ZBRANCH,BRANCH
 	POP t0			// top of stack is zero?
 	beqz t0, code_BRANCH	// if so, jump back to the branch function above
-	addi s1, s1, 8		// otherwise we need to skip the offset
+	addi s1, s1, 4		// otherwise we need to skip the offset
 	NEXT
 
 /*
@@ -2157,12 +2158,12 @@ _COMMA:
 */
 
 	defcode "LITSTRING",9,,LITSTRING,ZBRANCH
-	ld a0, 0(s1)		// get the length of the string
-	addi s1, s1, 8
+	lw a0, 0(s1)		// get the length of the string
+	addi s1, s1, 4
 	PUSH s1 a0		// push the address of the start and length of the string
 	add s1, s1, a0		// skip past the string
- 	addi s1, s1, 7		// but round up to next 8 byte boundary
-	andi s1, s1, ~7
+ 	addi s1, s1, 3		// but round up to next 4 byte boundary
+	andi s1, s1, ~3
 	NEXT
 
 	defcode "TELL",4,,TELL,LITSTRING
@@ -2187,9 +2188,9 @@ _COMMA:
 
 	// QUIT must not return (ie. must not call EXIT).
 	defword "QUIT",4,,QUIT,TELL
-	.dword RZ,RSPSTORE	// R0 RSP!, clear the return stack
+	.dword RZ,RSPSTORE      	// R0 RSP!, clear the return stack
 	.dword INTERPRET		// interpret the next word
-	.dword BRANCH,-16		// and loop (indefinitely)
+	.dword BRANCH,-8		// and loop (indefinitely)
 
 /*
 	This interpreter is pretty simple, but remember that in FORTH you can always override
@@ -2205,7 +2206,7 @@ _COMMA:
 	beqz a0, 1f
 
 	// In the dictionary.  Is it an IMMEDIATE codeword?
-	lb t0, 8(a0)		// Get name+flags.
+	lb t0, 4(a0)		// Get name+flags.
 	PUSH t0			// Just save it for now.
 	RCALL _TCFA		// Convert dictionary entry (in a0) to codeword pointer.
 	POP t0
@@ -2223,7 +2224,7 @@ _COMMA:
 
 2:	// Are we compiling or executing?
 	la t1, var_STATE
-	ld t0, 0(t1)
+	lw t0, 0(t1)
 	beqz t0, 4f		// Jump if executing.
 
 	// Compiling - just append the word to the current dictionary definition.
@@ -2238,7 +2239,7 @@ _COMMA:
 
 	// Not a literal, execute it now.  This never returns, but the codeword will
 	// eventually call NEXT which will reenter the loop in QUIT.
-	ld t0, 0(a0)
+	lw t0, 0(a0)
 	jr t0
 
 5:	// Executing a literal, which means push it on the stack.
@@ -2255,7 +2256,7 @@ _COMMA:
 	ecall
 
 	la a1, currkey		// the error occurred just before currkey position
-	ld a1, 0(a1)
+	lw a1, 0(a1)
 	la t0, buffer
 	sub a2, a1, t0		// a2 = currkey - buffer (length in buffer before currkey)
 	li t2, 40
@@ -2309,7 +2310,7 @@ errmsgnl: .ascii "\n"
 
 	defcode "EXECUTE",7,,EXECUTE,CHAR
 	POP a0			// Get xt into a0
-	ld t0, 0(a0)
+	lw t0, 0(a0)
 	jr t0			// and jump to it.
 				// After xt runs its NEXT will continue executing the current word.
 
@@ -2368,7 +2369,7 @@ set_up_data_segment:
 	li a7, __NR_brk
 	ecall
 	la t0, var_HERE		// Initialise HERE to point at beginning of data segment.
-	sd a0, 0(t0)
+	sw a0, 0(t0)
 	li t0, INITIAL_DATA_SEGMENT_SIZE
 	add a0, a0, t0		// Reserve nn bytes of memory for initial data segment.
 	li a7, __NR_brk		// Call brk(HERE+INITIAL_DATA_SEGMENT_SIZE)
