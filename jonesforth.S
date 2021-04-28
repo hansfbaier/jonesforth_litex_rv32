@@ -637,6 +637,7 @@ stack points ->	| addr of DOUBLE   |	   + 4 =   +------------------+
 main:
 	la t0, var_S0
 	sw sp, 0(t0)		       // Save the initial data stack pointer in FORTH variable S0.
+	RCALL uart_init
 	la fp, return_stack_top        // Initialise the return stack.
 	call set_up_data_segment
 
