@@ -633,15 +633,15 @@ stack points ->	| addr of DOUBLE   |	   + 4 =   +------------------+
 /* Assembler entry point. */
 
 	.text
-	.globl _start
-_start:
+	.globl main
+main:
 	la t0, var_S0
-	sw sp, 0(t0)		// Save the initial data stack pointer in FORTH variable S0.
+	sw sp, 0(t0)		       // Save the initial data stack pointer in FORTH variable S0.
 	la fp, return_stack_top        // Initialise the return stack.
 	call set_up_data_segment
 
-	la s1, cold_start      	// Initialise interpreter.
-	NEXT			        // Run interpreter!
+	la s1, cold_start      	       // Initialise interpreter.
+	NEXT			       // Run interpreter!
 
 	.section .rodata
 	.balign 4
@@ -1230,11 +1230,7 @@ var_\name :
 	F_HIDDEN	The HIDDEN flag's actual value.
 	F_LENMASK	The length mask in the flags/len byte.
 
-	SYS_*		and the numeric codes of various Linux syscalls (from <asm/unistd.h>)
 */
-
-#include <asm/unistd.h>	// you might need this instead
-
 	.macro defconst name, namelen, flags=0, label, value, link
 	defcode \name,\namelen,\flags,\label,\link
 	li t0, \value
@@ -1257,23 +1253,6 @@ var_\name :
 	defconst "F_HIDDEN",8,,__F_HIDDEN,F_HIDDEN,__F_IMMED
 	defconst "F_LENMASK",9,,__F_LENMASK,F_LENMASK,__F_HIDDEN
 
-	defconst "SYS_EXIT",8,,SYS_EXIT,__NR_exit,__F_LENMASK
-	defconst "SYS_OPEN",8,,SYS_OPEN,__NR_openat,SYS_EXIT
-	defconst "SYS_CLOSE",9,,SYS_CLOSE,__NR_close,SYS_OPEN
-	defconst "SYS_READ",8,,SYS_READ,__NR_read,SYS_CLOSE
-	defconst "SYS_WRITE",9,,SYS_WRITE,__NR_write,SYS_READ
-	defconst "SYS_CREAT",9,,SYS_CREAT,__NR_openat,SYS_WRITE
-	defconst "SYS_BRK",7,,SYS_BRK,__NR_brk,SYS_CREAT
-
-	defconst "O_RDONLY",8,,__O_RDONLY,0,SYS_BRK
-	defconst "O_WRONLY",8,,__O_WRONLY,1,__O_RDONLY
-	defconst "O_RDWR",6,,__O_RDWR,2,__O_WRONLY
-	defconst "O_CREAT",7,,__O_CREAT,0100,__O_RDWR
-	defconst "O_EXCL",6,,__O_EXCL,0200,__O_CREAT
-	defconst "O_TRUNC",7,,__O_TRUNC,01000,__O_EXCL
-	defconst "O_APPEND",8,,__O_APPEND,02000,__O_TRUNC
-	defconst "O_NONBLOCK",10,,__O_NONBLOCK,04000,__O_APPEND
-
 /*
 	RETURN STACK ----------------------------------------------------------------------
 
@@ -1281,7 +1260,7 @@ var_\name :
 	the top of the return stack.
 */
 
-	defcode ">R",2,,TOR, __O_NONBLOCK
+	defcode ">R",2,,TOR, __F_LENMASK
 	POP a0			// pop parameter stack into a0
 	PUSHRSP a0		// push it on to the return stack
 	NEXT
@@ -1365,36 +1344,32 @@ var_\name :
 	PUSH a0			// push return value on stack
 	NEXT
 _KEY:
-	la t1, currkey
-	lw a1, 0(t1)
-	la t0, bufftop
-	lw t0, 0(t0)
+	la t1, currkey          // t1 = address of currkey
+	lw a1, 0(t1)            // a1 = address of character pointed to by currkey
+	la t0, bufftop          // t0 = address of bufftop
+	lw t0, 0(t0)            // t0 = address of character pointed to by bufftop
 	sltu a2, a1, t0
 	beqz a2, 1f		// exhausted the input buffer?
 	lb a0, 0(a1)		// get next key from input buffer
-	addi a3, a1, 1
-	sw a3, 0(t1)		// increment currkey
+	addi a3, a1, 1          // advance currkey pointer
+	sw a3, 0(t1)		// store new currkey pointer
 	ret
 
-1:	// Out of input; use read(2) to fetch more input from stdin.
-	mv a0, zero		// 1st param: stdin
-	la a1, buffer		// 2nd param: buffer
-	la t0, currkey
+1:	// Out of input; read another character from UART
+	la t0, currkey         // t0 = address of currkey
 	sw a1, 0(t0)
-	li a2, BUFFER_SIZE	// 3rd param: max length
-	li a7, __NR_read	// syscall: read
-	ecall
-	slt t0, zero, a0	// If a0 <= 0, then exit.
-	beqz t0, 2f
-	add a0, a0, a1		// buffer+a0 = bufftop
-	la t0, bufftop
-	sw a0, 0(t0)
+2:      RCALL readchar_nonblock // try to get one
+	beqz a0, 2b             // if not, retry, we got nothing else to do
+	RCALL readchar
+	mv t1, a0               // t1 = returned char
+	la t0, bufftop          // t0 = pointer to bufftop
+	lw t0, 0(t0)            // t0 = address of character pointed to by bufftop
+	addi a0,t0,1            // a0 = (pointer in bufftop) + 1
+	la t0, bufftop          // t0 = pointer to bufftop
+	sw a0,0(t0)             // store advanced bufftop pointer
+	sw t1,0(a0)             // store new character in buffer
 	j _KEY
-
-2:	// Error or end of input: exit the program.
-	li a7, __NR_exit	// syscall: exit
-	ecall
-
+	
 	.data
 	.balign 4
 currkey:
@@ -1410,24 +1385,8 @@ bufftop:
 
 	defcode "EMIT",4,,EMIT, KEY
 	POP a0
-	RCALL _EMIT
+	RCALL putchar
 	NEXT
-_EMIT:
-	// write needs the address of the byte to write
-	la a1, emit_scratch     // 2nd param: address
-	sb a0, 0(a1)
-
-	li a0, 1		// 1st param: stdout
-
-	li a2, 1 		// 3rd param: nbytes = 1
-
-	li a7, __NR_write	// write syscall
-	ecall
-	ret
-
-	.data			// NB: easier to fit in the .data section
-emit_scratch:
-	.space 1		// scratch used by EMIT
 
 /*
 	Back to input, WORD is a FORTH word which reads the next full word of input.
@@ -2167,11 +2126,17 @@ _COMMA:
 	NEXT
 
 	defcode "TELL",4,,TELL,LITSTRING
-	li a0, 1		// 1st param: stdout
-	POP a2 a1		// a2 = 3rd param: length of string  a1 = 2nd param: address of string
-	li a7, __NR_write	// write syscall
-	ecall
+	POP a2 a1		// a2 = length of string  a1 = address of string
+	RCALL _TELL
 	NEXT
+
+_TELL:  beqz a2,1f      // if length of string is zero, we are done
+	lw   a0,0(a1)   // get first string character
+	RCALL putchar   // write it out
+	addi a2,a2,-1   // a2 = remaining length
+	addi a1,a1,1    // a1 = pointer to next char
+	j _TELL
+1:      ret
 
 /*
 	QUIT AND INTERPRET ----------------------------------------------------------------------
@@ -2248,12 +2213,10 @@ _COMMA:
 
 6:	// Parse error (not a known word or a number in the current BASE).
 	// Print an error message followed by up to 40 characters of context.
-	li a0, 2		// 1st param: stderr
-	la a1, errmsg		// 2nd param: error message
-	la t0, errmsgend
-	sub a2, t0, a1		// 3rd param: length of string
-	li a7, __NR_write	// write syscall
-	ecall
+	la a1, errmsg		// a1 = error message pointer
+	la t0, errmsgend        // t0 = error mesage end pointer
+	sub a2, t0, a1		// a2 = error message length
+	RCALL _TELL
 
 	la a1, currkey		// the error occurred just before currkey position
 	lw a1, 0(a1)
@@ -2264,25 +2227,18 @@ _COMMA:
 	beqz t0, 7f
 	li a2, 40
 7:	sub a1, a1, a2		// a1 = start of area to print, a2 = length
-	li a0, 2
-	li a7, __NR_write	// write syscall
-	ecall
+	RCALL _TELL
 
-	la a1, errmsgnl		// newline
-	li a2, 1
-	li a0, 2
-	li a7, __NR_write	// write syscall
-	ecall
-
+	la a1, '\n'
+	RCALL putchar
 	NEXT
 
 	.section .rodata
 errmsg: .ascii "PARSE ERROR: "
 errmsgend:
-errmsgnl: .ascii "\n"
 
 	.data			// NB: easier to fit in the .data section
-	.balign 8
+	.balign 4
 
 /*
 	ODDS AND ENDS ----------------------------------------------------------------------
@@ -2363,17 +2319,10 @@ errmsgnl: .ascii "\n"
 	You don't need to worry about this code.
 */
 	.text
-	.set INITIAL_DATA_SEGMENT_SIZE,262144
 set_up_data_segment:
-	mv a0, zero		// Call brk(0)
-	li a7, __NR_brk
-	ecall
 	la t0, var_HERE		// Initialise HERE to point at beginning of data segment.
+	la a0, _edata           // HEAP begins at the end of the data segment in RAM
 	sw a0, 0(t0)
-	li t0, INITIAL_DATA_SEGMENT_SIZE
-	add a0, a0, t0		// Reserve nn bytes of memory for initial data segment.
-	li a7, __NR_brk		// Call brk(HERE+INITIAL_DATA_SEGMENT_SIZE)
-	ecall
 	ret
 
 /*

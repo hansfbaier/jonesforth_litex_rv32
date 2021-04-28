@@ -1,52 +1,41 @@
-# $Id: Makefile,v 1.9 2007-10-22 18:53:12 rich Exp $
+#BUILD_DIR?=
 
-SHELL	:= /bin/bash
-GCC     := gcc
-CFLAGS	:= -I /usr/include -I. -g
+include $(BUILD_DIR)/software/include/generated/variables.mak
+include $(SOC_DIRECTORY)/software/common.mak
 
-all:	jonesforth
+OBJECTS   = isr.o jonesforth.o
 
-jonesforth: jonesforth.S
-	$(GCC) $(CFLAGS) -nostdlib -static -o $@ $<
+all: jonesforth.bin
 
-run:
-	cat jonesforth.f $(PROG) - | ./jonesforth
+# pull in dependency info for *existing* .o files
+-include $(OBJECTS:.o=.d)
+
+%.bin: %.elf
+	$(OBJCOPY) -O binary $< $@
+	chmod -x $@
+
+jonesforth.elf: $(OBJECTS)
+	$(LD) $(LDFLAGS) \
+		-Map=jonesforth.map \
+		-T linker.ld \
+		-N -o $@ \
+		$(BUILD_DIR)/software/libbase/crt0.o \
+		$(OBJECTS) \
+		-L$(BUILD_DIR)/software/libbase \
+		-L$(BUILD_DIR)/software/libcompiler_rt \
+		-lbase-nofloat -lcompiler_rt
+	chmod -x $@
+	size $@
+
+jonesforth.o: jonesforth.S
+
+%.o: %.c
+	$(compile)
+
+%.o: %.S
+	$(assemble) 
 
 clean:
-	rm -f jonesforth perf_dupdrop *~ core .test_*
+	$(RM) $(OBJECTS) $(OBJECTS:.o=.d) jonesforh.elf jonesforth.bin .*~ *~
 
-# Tests.
-
-TESTS	:= $(patsubst %.f,%.test,$(wildcard test_*.f))
-
-test check: $(TESTS)
-
-test_%.test: test_%.f jonesforth
-	@echo -n "$< ... "
-	@rm -f .$@
-	@cat <(echo ': TEST-MODE ;') jonesforth.f $< <(echo 'TEST') | \
-	  ./jonesforth 2>&1 | \
-	  sed 's/DSP=[0-9]*//g' > .$@
-	@diff -u .$@ $<.out
-	@rm -f .$@
-	@echo "ok"
-
-# Performance.
-
-perf_dupdrop: perf_dupdrop.c
-	$(GCC) -O3 -Wall -Werror -o $@ $<
-
-run_perf_dupdrop: jonesforth
-	cat <(echo ': TEST-MODE ;') jonesforth.f perf_dupdrop.f | ./jonesforth
-
-.SUFFIXES: .f .test
-.PHONY: test check run run_perf_dupdrop
-
-push-remote:
-	sshpass -p "riscv" scp -P 4321 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -r . root@localhost:/jonesforth
-
-ssh:
-	sshpass -p "riscv" ssh -p 4321 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@localhost
-
-qemu:
-	docker run --name riscv-qemu-fedora -p 4321:10000 jjy0/riscv-qemu-fedora
+.PHONY: all clean load
