@@ -36,6 +36,6 @@ jonesforth.o: jonesforth.S
 	$(assemble) 
 
 clean:
-	$(RM) $(OBJECTS) $(OBJECTS:.o=.d) jonesforh.elf jonesforth.bin .*~ *~
+	$(RM) $(OBJECTS) $(OBJECTS:.o=.d) jonesforth.elf jonesforth.bin .*~ *~ *.map
 
 .PHONY: all clean load
