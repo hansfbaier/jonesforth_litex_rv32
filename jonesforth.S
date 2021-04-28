@@ -1211,7 +1211,7 @@ var_\name :
 */
 	defvar "STATE",5,,STATE,,CMOVE
 	defvar "HERE",4,,HERE,,STATE
-	defvar "LATEST",6,,LATEST,name_SYSCALL0,HERE // SYSCALL0 must be last in built-in dictionary
+	defvar "LATEST",6,,LATEST,name_EXECUTE,HERE // EXECUTE must be last in built-in dictionary
 	defvar "S0",2,,SZ,,LATEST
 	defvar "BASE",4,,BASE,10,SZ
 
@@ -2249,13 +2249,9 @@ errmsgend:
 	EXECUTE is used to run execution tokens.  See the discussion of execution tokens in the
 	FORTH code for more details.
 
-	SYSCALL0, SYSCALL1, SYSCALL2, SYSCALL3 make a standard Linux system call.  (See <asm/unistd.h>
-	for a list of system call numbers).  As their name suggests these forms take between 0 and 3
-	syscall parameters, plus the system call number.
-
-	In this FORTH, SYSCALL0 must be the last word in the built-in (assembler) dictionary because we
+	In this FORTH, EXECUTE must be the last word in the built-in (assembler) dictionary because we
 	initialise the LATEST variable to point to it.  This means that if you want to extend the assembler
-	part, you must put new words before SYSCALL0, or else change how LATEST is initialised.
+	part, you must put new words before EXECUTE, or else change how LATEST is initialised.
 */
 
 	defcode "CHAR",4,,CHAR,INTERPRET
@@ -2269,30 +2265,6 @@ errmsgend:
 	lw t0, 0(a0)
 	jr t0			// and jump to it.
 				// After xt runs its NEXT will continue executing the current word.
-
-	defcode "SYSCALL3",8,,SYSCALL3,EXECUTE
-	POP a7 a0 a1 a2		// a7 = System call number (see <asm/unistd.h>)  a0..a2 = parameters
-	ecall
-	PUSH a0			// Result (negative for -errno)
-	NEXT
-
-	defcode "SYSCALL2",8,,SYSCALL2,SYSCALL3
-	POP a7 a0 a1		// a7 = System call number (see <asm/unistd.h>)  a0..a1 = parameters
-	ecall
-	PUSH a0			// Result (negative for -errno)
-	NEXT
-
-	defcode "SYSCALL1",8,,SYSCALL1,SYSCALL2
-	POP a7 a0		// a7 = System call number (see <asm/unistd.h>)  a0 = parameter
-	ecall
-	PUSH a0			// Result (negative for -errno)
-	NEXT
-
-	defcode "SYSCALL0",8,,SYSCALL0,SYSCALL1
-	POP a7			// System call number (see <asm/unistd.h>)
-	ecall
-	PUSH a0			// Result (negative for -errno)
-	NEXT
 
 /*
 	DATA SEGMENT ----------------------------------------------------------------------
