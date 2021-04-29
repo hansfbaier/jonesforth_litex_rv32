@@ -647,7 +647,7 @@ main:
 	.section .rodata
 	.balign 4
 cold_start:			// High-level code without a codeword.
-	.dword QUIT
+	.word QUIT
 
 /*
 	BUILT-IN WORDS ----------------------------------------------------------------------
@@ -668,25 +668,25 @@ cold_start:			// High-level code without a codeword.
 	Initially we can't just write ": DOUBLE DUP + ;" (ie. that literal string) here because we
 	don't yet have anything to read the string, break it up at spaces, parse each word, etc. etc.
 	So instead we will have to define built-in words using the GNU assembler data constructors
-	(like .dword, .byte, .string, .ascii and so on -- look them up in the gas info page if you are
+	(like .word, .byte, .string, .ascii and so on -- look them up in the gas info page if you are
 	unsure of them).
 
 	The long way would be:
 
-	.dword <link to previous word>
+	.word <link to previous word>
 	.byte 6			// len
 	.ascii "DOUBLE"		// string
 	.byte 0			// padding
-DOUBLE: .dword DOCOL		// codeword
-	.dword DUP		// pointer to codeword of DUP
-	.dword PLUS		// pointer to codeword of +
-	.dword EXIT		// pointer to codeword of EXIT
+DOUBLE: .word DOCOL		// codeword
+	.word DUP		// pointer to codeword of DUP
+	.word PLUS		// pointer to codeword of +
+	.word EXIT		// pointer to codeword of EXIT
 
 	That's going to get quite tedious rather quickly, so here I define an assembler macro
 	so that I can just write:
 
 	defword "DOUBLE",6,,DOUBLE
-	.dword DUP,PLUS,EXIT
+	.word DUP,PLUS,EXIT
 
 	and I'll get exactly the same effect.
 
@@ -704,13 +704,13 @@ DOUBLE: .dword DOCOL		// codeword
 	.balign 4
 	.globl name_\label
 name_\label :
-	.dword name_\link		// link
+	.word name_\link		// link
 	.byte \flags+\namelen	// flags + length byte
 	.ascii "\name"		// the name
 	.balign 4		// padding to next 8 byte boundary
 	.globl \label
 \label :
-	.dword DOCOL		// codeword - the interpreter
+	.word DOCOL		// codeword - the interpreter
 	// list of word pointers follow
 	.endm
 
@@ -741,13 +741,13 @@ name_\label :
 	.balign 4
 	.globl name_\label
 name_\label :
-	.dword name_\link		// link
+	.word name_\link		// link
 	.byte \flags+\namelen	// flags + length byte
 	.ascii "\name"		// the name
 	.balign 4		// padding to next 8 byte boundary
 	.globl \label
 \label :
-	.dword code_\label	// codeword
+	.word code_\label	// codeword
 	.text
 	.balign 4
 	.globl code_\label
@@ -1197,7 +1197,7 @@ _COPY_BYTES:
 	.data
 	.balign 4
 var_\name :
-	.dword \initial
+	.word \initial
 	.endm
 
 /*
@@ -1374,9 +1374,9 @@ _KEY:
 	.data
 	.balign 4
 currkey:
-	.dword buffer		// Current place in input buffer (next character to read).
+	.word buffer		// Current place in input buffer (next character to read).
 bufftop:
-	.dword buffer		// Last valid data in input buffer + 1.
+	.word buffer		// Last valid data in input buffer + 1.
 
 /*
 	By contrast, output is much simpler.  The FORTH word EMIT writes out a single byte to stdout.
@@ -1672,9 +1672,9 @@ _TCFA:
 */
 
 	defword ">DFA",4,,TDFA, TCFA
-	.dword TCFA		// >CFA		(get code field address)
-	.dword INCR4		// 4+		(add 4 to it to get to next word)
-	.dword EXIT		// EXIT		(return from FORTH word)
+	.word TCFA		// >CFA		(get code field address)
+	.word INCR4		// 4+		(add 4 to it to get to next word)
+	.word EXIT		// EXIT		(return from FORTH word)
 
 /*
 	COMPILING ----------------------------------------------------------------------
@@ -1931,22 +1931,22 @@ _COMMA:
 */
 
 	defword ":",1,,COLON, RBRAC
-	.dword WORD		// Get the name of the new word
-	.dword CREATE		// CREATE the dictionary entry / header
-	.dword LIT, DOCOL, COMMA	// Append DOCOL  (the codeword).
-	.dword LATEST, FETCH, HIDDEN // Make the word hidden (see below for definition).
-	.dword RBRAC		// Go into compile mode.
-	.dword EXIT		// Return from the function.
+	.word WORD		// Get the name of the new word
+	.word CREATE		// CREATE the dictionary entry / header
+	.word LIT, DOCOL, COMMA	// Append DOCOL  (the codeword).
+	.word LATEST, FETCH, HIDDEN // Make the word hidden (see below for definition).
+	.word RBRAC		// Go into compile mode.
+	.word EXIT		// Return from the function.
 
 /*
 	; (SEMICOLON) is also elegantly simple.  Notice the F_IMMED flag.
 */
 
 	defword ";",1,F_IMMED,SEMICOLON, COLON
-	.dword LIT, EXIT, COMMA	// Append EXIT (so the word will return).
-	.dword LATEST, FETCH, HIDDEN // Toggle hidden flag -- unhide the word (see below for definition).
-	.dword LBRAC		// Go back to IMMEDIATE mode.
-	.dword EXIT		// Return from the function.
+	.word LIT, EXIT, COMMA	// Append EXIT (so the word will return).
+	.word LATEST, FETCH, HIDDEN // Toggle hidden flag -- unhide the word (see below for definition).
+	.word LBRAC		// Go back to IMMEDIATE mode.
+	.word EXIT		// Return from the function.
 
 /*
 	EXTENDING THE COMPILER ----------------------------------------------------------------------
@@ -2016,10 +2016,10 @@ _COMMA:
 	NEXT
 
 	defword "HIDE",4,,HIDE,HIDDEN
-	.dword WORD		// Get the word (after HIDE).
-	.dword FIND		// Look up in the dictionary.
-	.dword HIDDEN		// Set F_HIDDEN flag.
-	.dword EXIT		// Return.
+	.word WORD		// Get the word (after HIDE).
+	.word FIND		// Look up in the dictionary.
+	.word HIDDEN		// Set F_HIDDEN flag.
+	.word EXIT		// Return.
 
 /*
 	' (TICK) is a standard FORTH word which returns the codeword pointer of the next word.
@@ -2154,9 +2154,9 @@ _TELL:  beqz a2,1f      // if length of string is zero, we are done
 
 	// QUIT must not return (ie. must not call EXIT).
 	defword "QUIT",4,,QUIT,TELL
-	.dword RZ,RSPSTORE      	// R0 RSP!, clear the return stack
-	.dword INTERPRET		// interpret the next word
-	.dword BRANCH,-8		// and loop (indefinitely)
+	.word RZ,RSPSTORE      	// R0 RSP!, clear the return stack
+	.word INTERPRET		// interpret the next word
+	.word BRANCH,-8		// and loop (indefinitely)
 
 /*
 	This interpreter is pretty simple, but remember that in FORTH you can always override
