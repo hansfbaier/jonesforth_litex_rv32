@@ -38,4 +38,7 @@ jonesforth.o: jonesforth.S
 clean:
 	$(RM) $(OBJECTS) $(OBJECTS:.o=.d) jonesforth.elf jonesforth.bin .*~ *~ *.map
 
-.PHONY: all clean load
+sim:
+	litex_sim --csr-csv csr.csv --ram-init jonesforth.bin
+
+.PHONY: all clean load sim
