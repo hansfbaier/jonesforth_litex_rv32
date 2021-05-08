@@ -1343,34 +1343,35 @@ var_\name :
 
         defcode "KEY",3,,KEY, DSPSTORE
         RCALL _KEY
-        PUSH a0                 // push return value on stack
+        PUSH a0                   // push return value on stack
         NEXT
 _KEY:
-        la t1, currkey          // t1 = address of currkey
-        lw a1, 0(t1)            // a1 = address of character pointed to by currkey
-        la t0, bufftop          // t0 = address of bufftop
-        lw t0, 0(t0)            // t0 = address of character pointed to by bufftop
+        la   t1, currkey          // t1 = address of currkey
+        lw   a1, 0(t1)            // a1 = address of character pointed to by currkey
+        la   t0, bufftop          // t0 = address of bufftop
+        lw   t0, 0(t0)            // t0 = address of character pointed to by bufftop
         sltu a2, a1, t0
-        beqz a2, 1f             // exhausted the input buffer?
-        lb a0, 0(a1)            // get next key from input buffer
-        addi a3, a1, 1          // advance currkey pointer
-        sw a3, 0(t1)            // store new currkey pointer
+        beqz a2, 1f               // exhausted the input buffer?
+        lb   a0, 0(a1)            // get next key from input buffer
+        addi a3, a1, 1            // advance currkey pointer
+        sw   a3, 0(t1)            // store new currkey pointer
         ret
 
 1:      // Out of input; read another character from UART
-        la t0, currkey         // t0 = address of currkey
-        sw a1, 0(t0)
-2:      RCALL readchar_nonblock // try to get one
-        beqz a0, 2b             // if not, retry, we got nothing else to do
+        la    t0, currkey          // t0 = address of currkey
+        sw    a1, 0(t0)
+2:      RCALL readchar_nonblock    // try to get one
+        beqz  a0, 2b               // if not, retry, we got nothing else to do
         RCALL readchar
-        mv t1, a0               // t1 = returned char
-        la t0, bufftop          // t0 = pointer to bufftop
-        lw t0, 0(t0)            // t0 = address of character pointed to by bufftop
-        addi a0,t0,1            // a0 = (pointer in bufftop) + 1
-        la t0, bufftop          // t0 = pointer to bufftop
-        sw a0,0(t0)             // store advanced bufftop pointer
-        sb t1,0(a0)             // store new character in buffer
-        j _KEY
+        RCALL uart_write           // echo key
+        mv    t1, a0               // t1 = returned char
+        la    t0, bufftop          // t0 = pointer to bufftop
+        lw    t0, 0(t0)            // t0 = address of character pointed to by bufftop
+        addi  a0, t0, 1            // a0 = (pointer in bufftop) + 1
+        la    t0, bufftop          // t0 = pointer to bufftop
+        sw    a0, 0(t0)            // store advanced bufftop pointer
+        sb    t1, 0(a0)            // store new character in buffer
+        j     _KEY
 
         .data
         .balign 4
