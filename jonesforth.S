@@ -637,6 +637,7 @@ stack points -> | addr of DOUBLE   |       + 4 =   +------------------+
 main:
         la t0, var_S0
         sw sp, 0(t0)                   // Save the initial data stack pointer in FORTH variable S0.
+        RCALL enable_uart_interrupts
         RCALL uart_init
         la fp, return_stack_top        // Initialise the return stack.
         call set_up_data_segment
@@ -1368,7 +1369,7 @@ _KEY:
         addi a0,t0,1            // a0 = (pointer in bufftop) + 1
         la t0, bufftop          // t0 = pointer to bufftop
         sw a0,0(t0)             // store advanced bufftop pointer
-        sw t1,0(a0)             // store new character in buffer
+        sb t1,0(a0)             // store new character in buffer
         j _KEY
 
         .data
@@ -1386,7 +1387,7 @@ bufftop:
 
         defcode "EMIT",4,,EMIT, KEY
         POP a0
-        RCALL putchar
+        RCALL uart_write
         NEXT
 
 /*
@@ -2118,10 +2119,10 @@ _COMMA:
 */
 
         defcode "LITSTRING",9,,LITSTRING,ZBRANCH
-        lw a0, 0(s1)            // get the length of the string
+        lw   a0, 0(s1)            // get the length of the string
         addi s1, s1, 4
         PUSH s1 a0              // push the address of the start and length of the string
-        add s1, s1, a0          // skip past the string
+        add  s1, s1, a0          // skip past the string
         addi s1, s1, 3          // but round up to next 4 byte boundary
         andi s1, s1, ~3
         NEXT
@@ -2131,11 +2132,11 @@ _COMMA:
         RCALL _TELL
         NEXT
 
-_TELL:  beqz a2,1f      // if length of string is zero, we are done
-        lw   a0,0(a1)   // get first string character
-        RCALL putchar   // write it out
-        addi a2,a2,-1   // a2 = remaining length
-        addi a1,a1,1    // a1 = pointer to next char
+_TELL:  beqz a2,1f       // if length of string is zero, we are done
+        lb   a0,0(a1)    // get first string character
+        RCALL uart_write // write it out
+        addi a2,a2,-1    // a2 = remaining length
+        addi a1,a1,1     // a1 = pointer to next char
         j _TELL
 1:      ret
 
@@ -2231,7 +2232,7 @@ _TELL:  beqz a2,1f      // if length of string is zero, we are done
         RCALL _TELL
 
         la a1, '\n'
-        RCALL putchar
+        RCALL uart_write
         NEXT
 
         .section .rodata
