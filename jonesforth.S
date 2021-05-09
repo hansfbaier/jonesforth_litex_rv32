@@ -2114,8 +2114,7 @@ _COMMA:
         LITSTRING is a primitive used to implement the ." and S" operators (which are written in
         FORTH).  See the definition of those operators later.
 
-        TELL just prints a string.  It's more efficient to define this in assembly because we
-        can make it a single Linux syscall.
+        TELL just prints a string.
 */
 
         defcode "LITSTRING",9,,LITSTRING,ZBRANCH
@@ -2231,7 +2230,7 @@ _TELL:  beqz a2,1f       // if length of string is zero, we are done
 7:      sub a1, a1, a2          // a1 = start of area to print, a2 = length
         RCALL _TELL
 
-        la a1, '\n'
+        li a0, '\n'
         RCALL uart_write
         NEXT
 
