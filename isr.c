@@ -20,14 +20,21 @@ void enable_uart_interrupts()
 	irq_setie(1);
 }
 
+void write_scratch(uint32_t value)
+{
+	ctrl_scratch_write(value);
+}
+
 void isr(void)
 {
 	uint32_t mcause;
 	asm volatile ("csrr %0, mcause" : "=r" (mcause));
+	uint32_t mepc;
+	asm volatile ("csrr %0, mepc" : "=r" (mepc));
 
 	irq_count++;
-	ctrl_scratch_write(irq_pending());
-	leds_out_write(irq_getmask());
+	ctrl_scratch_write(mepc);
+	leds_out_write(irq_pending());
 	__attribute__((unused)) unsigned int irqs;
 	irqs = irq_pending() & irq_getmask();
 
