@@ -1453,14 +1453,13 @@ _WORD:
         IS_BLANK a1, a0 // is blank?
         beqz a1, 3f             // if not, keep looping
         j 2b
-3:
-        /* Return the word (well, the static buffer) and length. */
+
+3:      /* Return the word (well, the static buffer) and length. */
         la a0, word_buffer      // return address of the word
         sub a1, a2, a0          // return length of the word
         ret
 
-        /* Code to skip \ comments to end of the current line. */
-4:
+4:      /* skip \ comments to end of the current line. */
         RCALL _KEY
         addi a1, a0, -'\n'      // end of line yet?
         bnez a1, 4b
