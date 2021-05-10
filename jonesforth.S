@@ -1938,22 +1938,22 @@ _COMMA:
 */
 
         defword ":",1,,COLON, RBRAC
-        .word WORD              // Get the name of the new word
-        .word CREATE            // CREATE the dictionary entry / header
-        .word LIT, DOCOL, COMMA // Append DOCOL  (the codeword).
+        .word WORD                  // Get the name of the new word
+        .word CREATE                // CREATE the dictionary entry / header
+        .word LIT, DOCOL, COMMA     // Append DOCOL  (the codeword).
         .word LATEST, FETCH, HIDDEN // Make the word hidden (see below for definition).
-        .word RBRAC             // Go into compile mode.
-        .word EXIT              // Return from the function.
+        .word RBRAC                 // Go into compile mode.
+        .word EXIT                  // Return from the function.
 
 /*
         ; (SEMICOLON) is also elegantly simple.  Notice the F_IMMED flag.
 */
 
         defword ";",1,F_IMMED,SEMICOLON, COLON
-        .word LIT, EXIT, COMMA  // Append EXIT (so the word will return).
+        .word LIT, EXIT, COMMA      // Append EXIT (so the word will return).
         .word LATEST, FETCH, HIDDEN // Toggle hidden flag -- unhide the word (see below for definition).
-        .word LBRAC             // Go back to IMMEDIATE mode.
-        .word EXIT              // Return from the function.
+        .word LBRAC                 // Go back to IMMEDIATE mode.
+        .word EXIT                  // Return from the function.
 
 /*
         EXTENDING THE COMPILER ----------------------------------------------------------------------
