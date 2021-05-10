@@ -32,9 +32,12 @@ void isr(void)
 	uint32_t mepc;
 	asm volatile ("csrr %0, mepc" : "=r" (mepc));
 
+	if (mcause) {
+		leds_out_write(mcause);
+		ctrl_scratch_write(mepc);
+	}
+
 	irq_count++;
-	ctrl_scratch_write(mepc);
-	leds_out_write(irq_pending());
 	__attribute__((unused)) unsigned int irqs;
 	irqs = irq_pending() & irq_getmask();
 
