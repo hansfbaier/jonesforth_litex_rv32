@@ -1154,8 +1154,13 @@ code_\label :                   // assembler code follows
         a2: source address
 */
 _COPY_BYTES:
+/*
         slti a4, a0, 4          // jump to copy byte if length is < 4
         bnez a4, 2f
+        andi t0, a1, 3          // check if destination is word aligned
+        bnez t0, 2f             // and copy bytes if not
+        andi t0, a2, 3          // check if source is word aligned
+        bnez t0, 2f             // and copy bytes if not
 1:      // copy word by word
         lw a3, 0(a2)
         sw a3, 0(a1)            // copy source to destination
@@ -1165,6 +1170,7 @@ _COPY_BYTES:
         addi a2, a2, 4
         slti a4, a0, 4          // check if length is < 4
         beqz a4, 1b
+*/
 2:      // copy byte
         lb a3, 0(a2)
         sb a3, 0(a1)
