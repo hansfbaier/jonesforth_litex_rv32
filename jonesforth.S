@@ -2224,6 +2224,8 @@ _TELL:  beqz  a2, 1f       // if length of string is zero, we are done
 
 6:      // Parse error (not a known word or a number in the current BASE).
         // Print an error message followed by up to 40 characters of context.
+        li a0, '\n'
+        RCALL uart_write
         la a1, errmsg           // a1 = error message pointer
         la t0, errmsgend        // t0 = error mesage end pointer
         sub a2, t0, a1          // a2 = error message length
