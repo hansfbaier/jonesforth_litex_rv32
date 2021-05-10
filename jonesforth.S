@@ -129,7 +129,7 @@
         could have done, I went for a simpler tutorial by assuming that the 'hardware' is a Linux
         process with a few basic system calls (read, write and exit and that's about all).  RISC-V
         is needed because I had to write the assembly for a processor.
-        (Of course when I say 'RISC-V', any 64-bit RISC-V processor or VM will do.
+        (Of course when I say 'RISC-V', any 32-bit RISC-V processor or VM will do.
         I'm compiling this on a qemu VM).
 
         Again, to assemble this you will need gcc and gas (the GNU assembler).  The commands to
@@ -1450,7 +1450,7 @@ _WORD:
         PUSH a2
         RCALL _KEY              // get next key, returned in a0
         POP a2
-        IS_BLANK a1, a0 // is blank?
+        IS_BLANK a1, a0         // is blank?
         beqz a1, 3f             // if not, keep looping
         j 2b
 
