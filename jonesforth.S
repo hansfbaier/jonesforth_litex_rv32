@@ -2304,7 +2304,7 @@ errmsgend:
         .text
 set_up_data_segment:
         la t0, var_HERE         // Initialise HERE to point at beginning of data segment.
-        la a0, _edata           // HEAP begins at the end of the data segment in RAM
+        la a0, _end             // HEAP begins at the end of allocated
         sw a0, 0(t0)
         ret
 
