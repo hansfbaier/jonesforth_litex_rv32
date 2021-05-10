@@ -1367,10 +1367,10 @@ _KEY:
         mv    t1, a0               // t1 = returned char
         la    t0, bufftop          // t0 = pointer to bufftop
         lw    t0, 0(t0)            // t0 = address of character pointed to by bufftop
+        sb    t1, 0(t0)            // store new character in buffer
         addi  a0, t0, 1            // a0 = (pointer in bufftop) + 1
         la    t0, bufftop          // t0 = pointer to bufftop
         sw    a0, 0(t0)            // store advanced bufftop pointer
-        sb    t1, 0(a0)            // store new character in buffer
         j     _KEY
 
         .data
