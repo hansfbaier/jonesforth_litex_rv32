@@ -2131,12 +2131,16 @@ _COMMA:
         RCALL _TELL
         NEXT
 
-_TELL:  beqz a2,1f       // if length of string is zero, we are done
-        lb   a0,0(a1)    // get first string character
-        RCALL uart_write // write it out
-        addi a2,a2,-1    // a2 = remaining length
-        addi a1,a1,1     // a1 = pointer to next char
-        j _TELL
+_TELL:  beqz  a2, 1f       // if length of string is zero, we are done
+        lb    a0, 0(a1)    // get first string character
+        PUSH  a1
+        PUSH  a2
+        RCALL uart_write   // write it out
+        POP  a2
+        POP  a1
+        addi a2, a2, -1    // a2 = remaining length
+        addi a1, a1, 1     // a1 = pointer to next char
+        j    _TELL
 1:      ret
 
 /*
