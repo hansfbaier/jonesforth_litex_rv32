@@ -549,6 +549,10 @@
         POP ra                                  // resume ra
         .endm
 
+        .macro TOSCRATCH arg
+        li t6, 0xf0000004
+        sw \arg, 0(t6)
+        .endm
 
 /*
         And with that we can now talk about the interpreter.
