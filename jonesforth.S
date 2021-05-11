@@ -2149,10 +2149,9 @@ _COMMA:
 */
 
         defcode "LITSTRING",9,,LITSTRING,ZBRANCH
-        lw   a0, 0(s1)            // get the length of the string
-        addi s1, s1, 4
+        lw   a0, 0(s1)          // get the length of the string
         PUSH s1 a0              // push the address of the start and length of the string
-        add  s1, s1, a0          // skip past the string
+        add  s1, s1, a0         // skip past the string
         addi s1, s1, 3          // but round up to next 4 byte boundary
         andi s1, s1, ~3
         NEXT
