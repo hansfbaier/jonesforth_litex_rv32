@@ -1351,6 +1351,15 @@ var_\name :
 
         .set BUFFER_SIZE, 4096
 
+        .macro check_buffer_address reg
+        la   t5, buffer
+        sltu t4, \reg, t5
+        bnez t4, 4f
+        la   t5, buffer_end
+        sltu t4, t5, \reg
+        bnez t4, 4f
+        .endm
+
         defcode "KEY",3,,KEY, DSPSTORE
         RCALL _KEY
         PUSH a0                   // push return value on stack
@@ -1358,9 +1367,19 @@ var_\name :
 _KEY:
         la   t1, currkey          // t1 = address of currkey
         lw   a1, 0(t1)            // a1 = address of character pointed to by currkey
+        check_buffer_address a1
         la   t0, bufftop          // t0 = address of bufftop
         lw   t0, 0(t0)            // t0 = address of character pointed to by bufftop
-        sltu a2, a1, t0
+        check_buffer_address t0
+
+        bne  a1, t0, 3f           // if currkey is the same as bufftop, reset them to beginning of buffer
+        la   a1, buffer
+        la   t0, currkey
+        sw   a1, 0(t0)            // reset currkey to beginning of buffer
+        la   t0, bufftop
+        sw   a1, 0(t0)            // reset bufftop to beginning of buffer
+
+3:      sltu a2, a1, t0
         beqz a2, 1f               // exhausted the input buffer?
         lb   a0, 0(a1)            // get next key from input buffer
         addi a3, a1, 1            // advance currkey pointer
@@ -1369,7 +1388,7 @@ _KEY:
 
 1:      // Out of input; read another character from UART
         la    t0, currkey          // t0 = address of currkey
-        sw    a1, 0(t0)
+        sw    a1, 0(t0)            // store currkey pointer
 2:      RCALL readchar_nonblock    // try to get one
         beqz  a0, 2b               // if not, retry, we got nothing else to do
         RCALL readchar
@@ -1382,6 +1401,8 @@ _KEY:
         la    t0, bufftop          // t0 = pointer to bufftop
         sw    a0, 0(t0)            // store advanced bufftop pointer
         j     _KEY
+
+4:      j     4b                   // pointers corrupt, endless loop
 
         .data
         .balign 4
@@ -2331,6 +2352,8 @@ return_stack_top:               // Initial top of return stack.
         .balign 4096
 buffer:
         .space BUFFER_SIZE
+buffer_end:
+        .space 4
 
 /*
         START OF FORTH CODE ----------------------------------------------------------------------
