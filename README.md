@@ -9,27 +9,36 @@ http://rwmj.wordpress.com/2010/08/07/jonesforth-git-repository/
 The x86 version source code is copied from a mirror repo: https://github.com/nornagon/jonesforth
 
 The RISC-V version is rewritten by [JJy](https://justjjy.com), mostly modification is in the `jonesforth.S` file.
-The RISC-V 32 version has been ported by [Hans Baier](https://www.hans-baier.de)
+The RISC-V 32 on LiteX version has been ported by [Hans Baier](https://www.hans-baier.de)
 
 > This RISC-V version jonesforth is using RV32 instructions, so the WORD size and alignment is 4 bytes.
 
 ## Run
+1. Set the BUILD_DIR environment variable to wherever the LiteX build dir of your SoC is, for exampleUI
+```
+export BUILD_DIR=build/qmtech_xc7a35t
+```
 
-Run Qemu VM:
+2. Build the binary
+```
+make clean; make
+```
 
-1. Start qemu RISC-V VM: `make qemu` - will outputs lots out logs, wait until complete the boot.
-2. Push files to qemu VM: `make push-remote` - the files are under `/jonesforth`.
-3. Connect to RISC-V VM: `make ssh`.
+3. Upload the binary
+```
+litex_term --kernel jonesforth.bin  --serial-boot --speed 115200 /dev/ttyUSBX
+```
+after Liftoff, cancel litex_term by pressing Ctrl+C twice
 
-> The docker image is very large, you can build it locally if you can't download it from server https://github.com/jjyr/docker-riscv-qemu-fedora
+4. Upload the bootstrap Forth code, and interact:
 
-Compile & Run:
+```
+picocom -b 115200 /dev/ttyUSBX --imap lfcrlf,crcrlf --omap delbs,crlf --send-cmd "ascii-xfr -s -l 100 -n"
+```
+Then press Ctrl+A S
+and enter: jonesforth.f
 
-1. Compile `make`.
-2. Start REPL: `make run`.
-3. Run all tests: `make test`
-
-> We haven't passed all tests yet: [issue #1](https://github.com/jjyr/jonesforth_riscv/issues/1)
+5. Ready to use!
 
 ## RISC-V references
 
