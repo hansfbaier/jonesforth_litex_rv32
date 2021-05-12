@@ -21,20 +21,5 @@ def interact():
         sys.stdout.flush()
 
     child.interact()
-    #child.close()
-
-def test():
-    p = PtyProcessUnicode.spawn(['./sim.sh'])
-    while True:
-        l = p.readline()
-        print(str(l))
-        if  "Liftoff" in l:
-            print("GOT IT")
-            break
-
-    n = p.write("42 EMIT ")
-    print(p.read(n + 1))
-    time.sleep(1)
-    p.close()
 
 interact()
