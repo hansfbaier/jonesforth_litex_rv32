@@ -14,7 +14,7 @@ The RISC-V 32 on LiteX version has been ported by [Hans Baier](https://www.hans-
 > This RISC-V version jonesforth is using RV32 instructions, so the WORD size and alignment is 4 bytes.
 
 ## Run
-1. Set the BUILD_DIR environment variable to wherever the LiteX build dir of your SoC is, for exampleUI
+1. Set the BUILD_DIR environment variable to wherever the LiteX build directory of your SoC is, for example:
 ```
 export BUILD_DIR=build/qmtech_xc7a35t
 ```
@@ -30,15 +30,29 @@ litex_term --kernel jonesforth.bin  --serial-boot --speed 115200 /dev/ttyUSBX
 ```
 after Liftoff, cancel litex_term by pressing Ctrl+C twice
 
+Don´t forget to use the right serial device filename.
+
 4. Upload the bootstrap Forth code, and interact:
 
 ```
-picocom -b 115200 /dev/ttyUSBX --imap lfcrlf,crcrlf --omap delbs,crlf --send-cmd "ascii-xfr -s -l 100 -n"
+picocom -b 115200 /dev/ttyUSBX --imap lfcrlf,crcrlf --omap delbs,crlf --send-cmd "ascii-xfr -s -c 1 -n"
 ```
 Then press Ctrl+A S
 and enter: jonesforth.f
 
+Also here, don't forget to replace ttyUSBX with the device name of your serial adapter.
+
 5. Ready to use!
+
+## Project Status
+It currently runs on simulator and FPGA.
+It still has bugs, especially the input routine is quite whacky.
+Nevertheless, as this is an educational implementation it would take much more work
+to mold it into something one actually would want to use.
+This is impractical, because there already exist good embedded Forth implementations
+for RV32, like mecrisp-quintus. So porting that one definitely would be preferrable.
+Because of this the project development is considered complete.
+Occasional pull requests are welcome.
 
 ## RISC-V references
 
