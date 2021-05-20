@@ -541,7 +541,7 @@
         .endm
 
         /* Macros to help us handling function calls.
-        This macro saves all nessacery registers before a function call
+        This macro saves all necessary registers before a function call
         and resume these registers after the call */
         .macro RCALL symbol
         PUSH ra                                 // push ra (return address) on to stack
