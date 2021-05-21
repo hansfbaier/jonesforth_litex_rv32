@@ -92,8 +92,8 @@
 : '"' [ CHAR " ] LITERAL ;
 : 'A' [ CHAR A ] LITERAL ;
 : 'Z' [ CHAR Z ] LITERAL ;
-: 'a' [ CHAR A ] LITERAL ;
-: 'z' [ CHAR Z ] LITERAL ;
+: 'a' [ CHAR a ] LITERAL ;
+: 'z' [ CHAR z ] LITERAL ;
 : '0' [ CHAR 0 ] LITERAL ;
 : '9' [ CHAR 9 ] LITERAL ;
 : '-' [ CHAR - ] LITERAL ;

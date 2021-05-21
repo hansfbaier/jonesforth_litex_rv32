@@ -841,7 +841,7 @@ code_\label :                   // assembler code follows
         PUSH a0
         NEXT
 
-        defcode "8+",2,,INCR8, INCR4
+        defcode "8+",2,,INCR8, DECR4
         POP a0
         addi a0, a0, 8          // add 8 to top of stack
         PUSH a0
