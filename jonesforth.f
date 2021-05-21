@@ -481,7 +481,6 @@
                 DROP            ( drop the double quote character at the end )
                 DUP             ( get the saved address of the length word )
                 HERE @ SWAP -   ( calculate the length )
-                4-              ( subtract 4 (because we measured from the start of the length word) )
                 SWAP !          ( and back-fill the length location )
                 ALIGN           ( round up to next multiple of 4 bytes for the remaining code )
         ELSE            ( immediate mode )
