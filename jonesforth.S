@@ -1526,48 +1526,62 @@ word_buffer:
         NEXT
 
 _NUMBER:
-        mv a0, zero
+        mv   a0, zero
         beqz a1, 5f             // trying to parse a zero-length string is an error, but will return 0.
 
         la a3, var_BASE
         lw a3, 0(a3)            // get BASE
 
         // Check if first character is '-'.
-        lb a4, 0(a2)            // a4 = first character in string
-        addi a2, a2, 1
+        lb   a4, 0(a2)          // a4 = first character in string
+        addi a2, a2, 1          // a2 = pointer to next character
         addi a5, a4, -'-'       // negative number?
-        bnez a5, 2f             // number is negative if a5 = 0
-        addi a1, a1, -1
-        bnez a1, 1f
-        li a1, 1                // error: string is only '-'.
+        bnez a5, 6f             // non-zero: not negative
+
+        addi a1, a1, -1         // negative: consume character
+        bnez a1, 7f             // a1 != 0: continue processing string
+        li   a1, 1              // error: string is only '-'.
+        ret
+
+7:      lb   a4, 0(a2)          // it is negative:
+        addi a2, a2, 1          // get next character
+
+        // Check if character is '$'.
+6:      addi a6, a4, -'$'       // is it the dollar sign?
+        bnez a6, 2f             // not dollar? process number
+
+        li   a3, 16             // if we had a '$' set base to hex
+        addi a1, a1, -1         // hex: consume character
+        bnez a1, 1f             // and get next if string does not end here
+        li   a1, 1              // error: string ends after '$'.
         ret
 
         // Loop reading digits.
-1:      mul a0, a0, a3          // a0 *= BASE
-        lb a4, 0(a2)            // a4 = next character in string
+1:      mul  a0, a0, a3          // a0 *= BASE
+        lb   a4, 0(a2)           // a4 = next character in string
         addi a2, a2, 1
 
         // Convert 0-9, A-Z to a number 0-35.
 2:      sltiu t0, a4, '0'       // < '0'?
-        bnez t0, 4f
-        addi a4, a4, -'0'
+        bnez  t0, 4f
+        addi  a4, a4, -'0'
         sltiu t0, a4, 10        // <= '9'?
-        bnez t0, 3f
+        bnez  t0, 3f
         sltiu t0, a4, 17        // < 'A'? (17 is 'A' - '0')
-        bnez t0, 4f
-        addi a4, a4, -7 // Char - 'A' + 10
+        bnez  t0, 4f
+        addi  a4, a4, -7 // Char - 'A' + 10
 
-3:      slt t0, a4, a3          // >= BASE?
+3:      slt  t0, a4, a3          // >= BASE?
         beqz t0, 4f
 
         // OK, so add it to a0 and loop.
-        add a0, a0, a4
+        add  a0, a0, a4
         addi a1, a1, -1
         bnez a1, 1b
 
 4:      // Negate the result if first character was '-' (a5 = 0?).
         bnez a5, 5f
-        neg a0, a0
+        neg  a0, a0
 
 5:      ret
 

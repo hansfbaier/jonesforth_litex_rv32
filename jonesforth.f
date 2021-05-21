@@ -271,6 +271,7 @@
 ( Standard words for manipulating BASE. )
 : DECIMAL ( -- ) 10 BASE ! ;
 : HEX ( -- ) 16 BASE ! ;
+: BINARY ( -- ) 2 BASE ! ;
 
 (
         PRINTING NUMBERS ----------------------------------------------------------------------
@@ -1452,6 +1453,12 @@
 
         HERE @          ( push start address )
 ;
+
+\ ================================== port specific additions =================================================
+
+( these words currently do nothing until some sort of flash storage is implemented )
+: compiletoflash ;
+: compiletoram ;
 
 : WELCOME
         S" TEST-MODE" FIND NOT IF
