@@ -91,7 +91,11 @@
 : ')' [ CHAR ) ] LITERAL ;
 : '"' [ CHAR " ] LITERAL ;
 : 'A' [ CHAR A ] LITERAL ;
+: 'Z' [ CHAR Z ] LITERAL ;
+: 'a' [ CHAR A ] LITERAL ;
+: 'z' [ CHAR Z ] LITERAL ;
 : '0' [ CHAR 0 ] LITERAL ;
+: '9' [ CHAR 9 ] LITERAL ;
 : '-' [ CHAR - ] LITERAL ;
 : '.' [ CHAR . ] LITERAL ;
 
@@ -248,7 +252,7 @@
 )
 
 ( Some more complicated stack examples, showing the stack notation. )
-: NIP ( x y -- y ) SWAP DROP ;
+: NIP  ( x y -- y ) SWAP DROP ;
 : TUCK ( x y -- y x y ) SWAP OVER ;
 : PICK ( x_u ... x_1 x_0 u -- x_u ... x_1 x_0 x_u )
         1+              ( add one because of 'u' on the stack )
@@ -269,9 +273,9 @@
 ;
 
 ( Standard words for manipulating BASE. )
+: HEX     ( -- ) 16 BASE ! ;
 : DECIMAL ( -- ) 10 BASE ! ;
-: HEX ( -- ) 16 BASE ! ;
-: BINARY ( -- ) 2 BASE ! ;
+: BINARY  ( -- )  2 BASE ! ;
 
 (
         PRINTING NUMBERS ----------------------------------------------------------------------
@@ -1457,8 +1461,10 @@
 \ ================================== port specific additions =================================================
 
 ( these words currently do nothing until some sort of flash storage is implemented )
-: compiletoflash ;
-: compiletoram ;
+: COMPILETOFLASH ;
+: COMPILETORAM ;
+: HEX. BASE @ HEX . BASE ! ;
+: MAX 2DUP <= IF SWAP DROP ELSE DROP THEN ;
 
 : WELCOME
         S" TEST-MODE" FIND NOT IF

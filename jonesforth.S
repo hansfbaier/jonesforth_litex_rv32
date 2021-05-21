@@ -1127,7 +1127,7 @@ code_\label :                   // assembler code follows
 
         defcode "C!",2,,STOREBYTE, SUBSTORE
         POP a0 a1               // a0 = address to store at  a1 = data to store there
-        sb a1, 0(a0)    // store it
+        sb a1, 0(a0)            // store it
         NEXT
 
         defcode "C@",2,,FETCHBYTE, STOREBYTE
