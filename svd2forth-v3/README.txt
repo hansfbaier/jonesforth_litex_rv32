@@ -1,5 +1,5 @@
 This is a generic STM32 SVD2FORTH By Terry Porter <terry@tjporter.com.au> 2019 for Mecrisp_Stellaris by Mathias Koch
-Developed on FreeBSD but will run on other BSD's and Linux. 
+Developed on FreeBSD but will run on other BSD's and Linux.
 
 Purpose:
 ========
@@ -31,16 +31,16 @@ Longer Description
 ------------------
 Memory Map Word Example
 -----------------------
-$40021000 constant RCC ( Reset and clock control ) 
-RCC $0 + constant RCC-CR ( Clock control register ) 
-RCC $4 + constant RCC-CFGR ( Clock configuration register  RCC_CFGR ) 
-RCC $8 + constant RCC-CIR ( Clock interrupt register  RCC_CIR ) 
-RCC $C + constant RCC-APB2RSTR ( APB2 peripheral reset register  RCC_APB2RSTR ) 
-RCC $10 + constant RCC-APB1RSTR ( APB1 peripheral reset register  RCC_APB1RSTR ) 
-RCC $14 + constant RCC-AHBENR ( AHB Peripheral Clock enable register  RCC_AHBENR ) 
-RCC $18 + constant RCC-APB2ENR ( APB2 peripheral clock enable register  RCC_APB2ENR ) 
-RCC $1C + constant RCC-APB1ENR ( APB1 peripheral clock enable register  RCC_APB1ENR ) 
-RCC $20 + constant RCC-BDCR ( Backup domain control register  RCC_BDCR ) 
+$40021000 constant RCC ( Reset and clock control )
+RCC $0 + constant RCC-CR ( Clock control register )
+RCC $4 + constant RCC-CFGR ( Clock configuration register  RCC_CFGR )
+RCC $8 + constant RCC-CIR ( Clock interrupt register  RCC_CIR )
+RCC $C + constant RCC-APB2RSTR ( APB2 peripheral reset register  RCC_APB2RSTR )
+RCC $10 + constant RCC-APB1RSTR ( APB1 peripheral reset register  RCC_APB1RSTR )
+RCC $14 + constant RCC-AHBENR ( AHB Peripheral Clock enable register  RCC_AHBENR )
+RCC $18 + constant RCC-APB2ENR ( APB2 peripheral clock enable register  RCC_APB2ENR )
+RCC $1C + constant RCC-APB1ENR ( APB1 peripheral clock enable register  RCC_APB1ENR )
+RCC $20 + constant RCC-BDCR ( Backup domain control register  RCC_BDCR )
 RCC $24 + constant RCC-CSR ( Control/status register  RCC_CSR )
 
 
@@ -53,9 +53,9 @@ Howto
 =====
 * Include your SVD file in the release directory and edit the SVD name in the Makefile
 * run "make everything", this creates template.xml, bitfields.fs, memmap.fs and STMxxxxx.svd.equates.s
-* Edit "template.xml" and COMMENT OUT the Peripherals you are NOT using 
+* Edit "template.xml" and COMMENT OUT the Peripherals you are NOT using
    Not commented out:  <name xmlns:xs="http://www.w3.org/2001/XMLSchema-instance">GPIOE</name>
-   Commented out:      <!--  <name xmlns:xs="http://www.w3.org/2001/XMLSchema-instance">GPIOE</name> -->   
+   Commented out:      <!--  <name xmlns:xs="http://www.w3.org/2001/XMLSchema-instance">GPIOE</name> -->
 * run "make mem"
    This will create new bitfields.fs and memmap.fs based on your edited template.xml file.
 * Upload 1b.fs then memmap.fs to your MCU. If the Flash or Ram is filled, then perhaps you didn't bother editing template.xml to reduce the size ?
@@ -85,9 +85,9 @@ sed
 
 template.xml
 ============
-    Initially contains a list of ALL the Peripherals in your ARM svd MCU file. You edit this file by either commenting out, or deleting lines of Peripherals you DON'T want to use in your project. 
+    Initially contains a list of ALL the Peripherals in your ARM svd MCU file. You edit this file by either commenting out, or deleting lines of Peripherals you DON'T want to use in your project.
 
-* Edit "template.xml" and COMMENT OUT the Peripherals you are NOT using 
+* Edit "template.xml" and COMMENT OUT the Peripherals you are NOT using
    Not commented out:  <name xmlns:xs="http://www.w3.org/2001/XMLSchema-instance">GPIOE</name>
    Commented out:      <!--  <name xmlns:xs="http://www.w3.org/2001/XMLSchema-instance">GPIOE</name> -->
 

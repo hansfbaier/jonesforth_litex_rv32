@@ -6,9 +6,9 @@
     <xsl:output method="text"/>
     <!-- <xsl:output method="xml" encoding="UTF-8" indent="yes"/> -->
     <xsl:template match="/device">
-<xsl:text>\ </xsl:text><xsl:value-of select="name"/> <xsl:text> Register Bitfield Definitions for Mecrisp-Stellaris Forth by Matthias Koch. 
+<xsl:text>\ </xsl:text><xsl:value-of select="name"/> <xsl:text> Register Bitfield Definitions for Mecrisp-Stellaris Forth by Matthias Koch.
 </xsl:text>
-<xsl:text>\ bitfield.xsl takes STM32Fxx.svd, config.xml and produces bitfield.fs
+<xsl:text>\ bitfield.xsl takes svdfile.svd, config.xml and produces bitfield.fs
 </xsl:text>
 <xsl:text>\ Written by Terry Porter "terry@tjporter.com.au" 2016 - 2018 and released under the GPL V2.
 </xsl:text>
@@ -33,11 +33,11 @@
             <xsl:variable name="reg1" select="name"/>
             <xsl:text> (</xsl:text>
             <xsl:value-of select="access"/><xsl:text>)</xsl:text>
-<!-- Register name and access method -->            
+<!-- Register name and access method -->
 
 <xsl:text>
 </xsl:text>
-            
+
 
             <xsl:for-each select="fields/field">
               <xsl:text>: </xsl:text>
@@ -47,7 +47,7 @@
               <xsl:text>_</xsl:text>
               <xsl:value-of select="name"/>
               <xsl:text> </xsl:text>
-              
+
               <xsl:text> </xsl:text>
 <!-- Register BitWidths -->
                 <xsl:choose>
@@ -109,7 +109,7 @@
               <xsl:value-of select="$device"/>
               <xsl:text>-</xsl:text>
 	      <xsl:value-of select="$reg1"/>
-	      
+
 		  <xsl:text> bis! ; </xsl:text>
 		  <xsl:text> \ </xsl:text>
 		  <xsl:value-of select="$device"/>
@@ -126,6 +126,6 @@
             </xsl:when>
         </xsl:choose>
       </xsl:for-each>
-      
+
     </xsl:template>
   </xsl:stylesheet>
